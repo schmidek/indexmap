@@ -23,6 +23,7 @@ use core::cmp::Ordering;
 use core::fmt;
 use core::hash::{BuildHasher, Hash};
 use core::ops::{BitAnd, BitOr, BitXor, Index, RangeBounds, Sub};
+use std::hash::Hasher;
 
 use super::{Entries, Equivalent, IndexMap};
 
@@ -911,6 +912,16 @@ where
     T: Eq + Hash,
     S: BuildHasher,
 {
+}
+
+impl<T, S> Hash for IndexSet<T, S>
+where
+    T: Eq + Hash,
+    S: BuildHasher,
+{
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.map.hash(state);
+    }
 }
 
 impl<T, S> IndexSet<T, S>

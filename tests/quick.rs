@@ -7,7 +7,7 @@ use quickcheck::QuickCheck;
 use quickcheck::TestResult;
 
 use fnv::FnvHasher;
-use std::hash::{BuildHasher, BuildHasherDefault};
+use std::hash::{BuildHasher, BuildHasherDefault, Hasher};
 type FnvBuilder = BuildHasherDefault<FnvHasher>;
 type IndexMapFnv<K, V> = IndexMap<K, V, FnvBuilder>;
 
@@ -20,7 +20,7 @@ use std::ops::Bound;
 use std::ops::Deref;
 
 use indexmap::map::Entry as OEntry;
-use std::collections::hash_map::Entry as HEntry;
+use std::collections::hash_map::{DefaultHasher, Entry as HEntry};
 
 fn set<'a, T: 'a, I>(iter: I) -> HashSet<T>
 where
@@ -341,6 +341,15 @@ where
     true
 }
 
+fn simple_hash<T>(obj: T) -> u64
+where
+    T: Hash,
+{
+    let mut hasher = DefaultHasher::new();
+    obj.hash(&mut hasher);
+    hasher.finish()
+}
+
 quickcheck_limit! {
     fn operations_i8(ops: Large<Vec<Op<i8, i8>>>) -> bool {
         let mut map = IndexMap::new();
@@ -400,6 +409,9 @@ quickcheck_limit! {
         let mut reference2 = HashMap::new();
         do_ops(&ops2, &mut map2, &mut reference2);
         assert_eq!(map == map2, reference == reference2);
+        if map == map2 {
+            assert_eq!(simple_hash(map), simple_hash(map2));
+        }
         true
     }
 

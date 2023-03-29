@@ -28,6 +28,7 @@ use ::core::hash::{BuildHasher, Hash, Hasher};
 use ::core::ops::{Index, IndexMut, RangeBounds};
 use alloc::boxed::Box;
 use alloc::vec::Vec;
+use std::collections::hash_map::DefaultHasher;
 
 #[cfg(feature = "std")]
 use std::collections::hash_map::RandomState;
@@ -1216,4 +1217,25 @@ where
     V: Eq,
     S: BuildHasher,
 {
+}
+
+impl<K, V, S> Hash for IndexMap<K, V, S>
+where
+    K: Eq + Hash,
+    V: Eq + Hash,
+    S: BuildHasher,
+{
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        state.write_usize(self.len());
+        // based on https://github.com/rust-lang/rust/pull/48366/files
+        state.write_u64(
+            self.iter()
+                .map(|kv| {
+                    let mut h = DefaultHasher::new();
+                    kv.hash(&mut h);
+                    h.finish()
+                })
+                .fold(0, u64::wrapping_add),
+        );
+    }
 }
